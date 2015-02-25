@@ -1,16 +1,13 @@
 # SixArm.com » tmux » dot files
 
+Our `tmux.conf` dot file.
+
+You can read the file to see what it does, and edit your own copy as you like.
+
+A notable item is changing the tmux prefix key from C-b to C-q.
+
 To install:
 
 ```
-dir="${XDG_CONFIG_HOME:-$HOME/.config}/tmux" &&
-mkdir -p "$dir" &&
-cp -R "tmux.conf" "$dir/" &&
-ln -sfn "$HOME/.tmux.conf" "$dir/tmux.conf"
+./install.sh
 ```
-
-
-The install will do two things:
-
-  * Copy the file `tmux.conf` to your home configuration directory for tmux, typically `~/.config/tmux`
-  * Link the default tmux location `~/.tmux.conf` to this file.
