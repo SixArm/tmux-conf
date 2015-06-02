@@ -11,3 +11,7 @@ To install:
 ```
 ./install.sh
 ```
+
+A good tmux primer:
+
+* http://tangosource.com/blog/a-tmux-crash-course-tips-and-tweaks/
