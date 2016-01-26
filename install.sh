@@ -1,21 +1,26 @@
 #!/bin/sh
-
+#
+# Install our tmux conf files.
+#
+# Edit this script as you like, or install the files manually.
+#
+# This script does three things:
+#
+#   1. Create a tmux directory, typically `~/.config/tmux/`.
+#
+#   2. Copy these files `tmux*.conf` into the directory.
+#
+#   3. Link the default tmux location `~/.tmux.conf`.
+#
+# Version: 3.1.0
+# Created: 2014-11-29
+# Updated: 2016-01-26
+# Contact: Joel Parker Henderson (joel@joelparkerhenderson.com)
+# License: GPL
 ##
-# Install our tmux.conf file within our home directory.
-#
-# Edit this script as you like, or install the file manually.
-#
-# The install does two things:
-#
-#   * Copy the file `tmux.conf` to your home configuration
-#     directory for tmux, which is typically `~/.config/tmux`
-#
-#   * Link the default tmux location `~/.tmux.conf` to this file.
-#
-#
-##
+set -euf
 
-dir="${XDG_CONFIG_HOME:-$HOME/.config}/tmux" &&
-mkdir -p "$dir" &&
+dir="${XDG_CONFIG_HOME:-$HOME/.config}/tmux"
+mkdir -p "$dir"
 cp -R "tmux*.conf" "$dir/" &&
-ln -sfn "$HOME/.tmux.conf" "$dir/tmux.conf"
+ln -sfn "$dir/tmux.conf" "$HOME/.tmux.conf"
