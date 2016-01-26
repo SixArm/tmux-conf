@@ -22,5 +22,5 @@ set -euf
 
 dir="${XDG_CONFIG_HOME:-$HOME/.config}/tmux"
 mkdir -p "$dir"
-cp -R "tmux*.conf" "$dir/" &&
+cp -R tmux*.conf "$dir/" &&
 ln -sfn "$dir/tmux.conf" "$HOME/.tmux.conf"
