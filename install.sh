@@ -6,11 +6,13 @@
 #
 # This script does three things:
 #
-#   1. Create a tmux directory, typically `~/.config/tmux/`.
+#   1. Pick a tmux directory, typically `~/.config/tmux`.
 #
-#   2. Copy these files `tmux*.conf` into the directory.
+#   2. If the directory already exists, move it to a backup.
 #
-#   3. Link the default tmux location `~/.tmux.conf`.
+#   3. Copy this repo's files into the directory.
+#
+#   4. Link the default tmux location `~/.tmux.conf`.
 #
 # ## Tracking
 #
@@ -23,7 +25,15 @@
 ##
 set -euf
 
-dir="${XDG_CONFIG_HOME:-$HOME/.config}/tmux"
+## Conventions
+out() { printf %s\\n "$*" ; }
+sec() { date -u "+%s" ; }
+confdir() { echo ${XDG_CONFIG_HOME:-$HOME/.config}; }
+
+## Main
+dir="$(confdir)/tmux"
+out "dir:$dir"
+[ -e "$dir" ] && mv "$dir" "$dir-backup-$(sec)"
 mkdir -p "$dir"
-cp tmux.conf tmux-status.conf tmux-mouse.conf tmux-linux.conf tmux-osx.conf "$dir/"
+cp -R tmux "$dir"
 ln -sfn "$dir/tmux.conf" "$HOME/.tmux.conf"

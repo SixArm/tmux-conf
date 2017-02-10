@@ -21,8 +21,6 @@ A good tmux primer:
 * http://tangosource.com/blog/a-tmux-crash-course-tips-and-tweaks/
 
 
-
-
 ## Version-specific settings
 
 See the `version-specific` directory.
