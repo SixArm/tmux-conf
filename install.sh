@@ -12,9 +12,12 @@
 #
 #   3. Link the default tmux location `~/.tmux.conf`.
 #
-# Version: 3.1.0
+# ## Tracking
+#
+# Program: install.sh
+# Version: 4.0.0
 # Created: 2014-11-29
-# Updated: 2016-01-26
+# Updated: 2017-02-10
 # Contact: Joel Parker Henderson (joel@joelparkerhenderson.com)
 # License: GPL
 ##
