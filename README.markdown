@@ -8,7 +8,8 @@ Two important items for a beginner to know:
 
   * We change the tmux prefix key from "C-b" to "C-a".
 
-  * We change the installation location from `~/.tmux.conf` to `~/.config/tmux/tmux.conf`.
+  * We change the installation location from `~/.tmux.conf` to `~/.config/tmux/tmux.conf`. This is because we generally like to use the XDG Base Directories Specification, which recommends using the default config directory `~/.config`.
+
 
 To install:
 
