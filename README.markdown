@@ -61,7 +61,8 @@ and blogging about how to set tmux and its related tools.
   * http://www.unwiredcouch.com/2013/11/15/my-tmux-setup.html
   * http://stackoverflow.com/questions/35016458
   * http://stackoverflow.com/users/5353461/tom-hale
-
+  * https://github.com/HaleTom
+  
 ## Tracking
 
 * Package: sixarm_tmux_dotfiles
