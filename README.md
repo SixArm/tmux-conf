@@ -68,6 +68,15 @@ then we want this setting:
 bind y run "tmux save-buffer - | reattach-to-user-namespace pbcopy"
 ```
 
+## Suppress warnings
+
+If you want, you can use `set -q` to suppress warnings from nonexistent options. This which has been supported since tmux 1.7.
+
+For example the option `mouse-utf8` exists in tmux 2.0 but does not exist in tmux 3.0, so you can set the optiona and suppress warnings like this:
+
+```tmux
+set -q mouse-utf8 on
+```
 
 ## Primer
 
@@ -93,9 +102,16 @@ What is a session, a window, a pane?
 * A pane is a part of a window that runs a specific command, e.g. a shell.
 
 
-## Use SSH to help with automatic window naming
+## Use SSH to help with window naming
 
-Helpful code to add to ~/.ssh/config:
+If you want to use SSH and have each new SSH window cause its own window naming,
+then add this to your tmux config file, typically `~/.tmux.conf`:
+
+```tmux
+set-option -g allow-rename on
+```
+
+And add code like this to your SSH config file, typically `~/.ssh/config`:
 
 ```ssh
 Host *
@@ -108,7 +124,13 @@ local hostname with an escape sequence that triggers tmux to set the window titl
 If we open the list of windows (ctrl-a w) we see each window's server name.
 This is also the reason why I have automatic window renaming turned off.
 
-Credit: http://www.unwiredcouch.com/2013/11/15/my-tmux-setup.html
+Note: The allow-rename option was added in tmux 1.6 and with default on. The allow-rename default changed after tmux 2.7 from on to off. If allow-rename is off, then the SSH code to rename each window will not have any effect 
+
+Credits:
+
+  * http://www.unwiredcouch.com/2013/11/15/my-tmux-setup.html
+
+  * https://www.reddit.com/user/moobarmoobar/
 
 
 ## See also
