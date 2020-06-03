@@ -34,12 +34,14 @@ source $HOME/tmux-conf/sources/split-window.conf
 source $HOME/tmux-conf/sources/status-color-is-black-on-white.conf
 source $HOME/tmux-conf/sources/status-via-powerline.conf
 source $HOME/tmux-conf/sources/switch-session-via-name.conf
-source $HOME/tmux-conf/sources/unbind-all-keys.conf
 source $HOME/tmux-conf/sources/zoom-via-plus-minus.conf
 ```
 
-If you do add `unbind-all-keys`, then add it first, because it clears many settings.
+If you want a perfectly clean setup, then you can a line for `unbind-all-keys`, and add it first, because it clears many settings.
 
+```tmux
+source $HOME/tmux-conf/sources/unbind-all-keys.conf
+```
 
 ## Version-specific settings
 
