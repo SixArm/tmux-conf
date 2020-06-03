@@ -26,8 +26,8 @@ Then you can add any of these lines that you like:
 source $HOME/tmux-conf/sources/base-index-pane-number-is-1.conf
 source $HOME/tmux-conf/sources/mouse.conf
 source $HOME/tmux-conf/sources/prefix-is-control-a.conf
-source $HOME/tmux-conf/sources/select-window-via-meta-number
-source $HOME/tmux-conf/sources/select-layout-via-brackets
+source $HOME/tmux-conf/sources/select-window-via-meta-number.conf
+source $HOME/tmux-conf/sources/select-layout-via-brackets.conf
 source $HOME/tmux-conf/sources/select-pane-via-hjkl.conf
 source $HOME/tmux-conf/sources/shell.conf
 source $HOME/tmux-conf/sources/split-window.conf
@@ -124,7 +124,7 @@ local hostname with an escape sequence that triggers tmux to set the window titl
 If we open the list of windows (ctrl-a w) we see each window's server name.
 This is also the reason why I have automatic window renaming turned off.
 
-Note: The allow-rename option was added in tmux 1.6 and with default on. The allow-rename default changed after tmux 2.7 from on to off. If allow-rename is off, then the SSH code to rename each window will not have any effect 
+Note: The allow-rename option was added in tmux 1.6 and with default on. The allow-rename default changed after tmux 2.7 from on to off. If allow-rename is off, then the SSH code to rename each window will not have any effect
 
 Credits:
 
