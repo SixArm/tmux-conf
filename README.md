@@ -38,21 +38,27 @@ If you want a perfectly clean setup, then use this line first:
 source $HOME/.config/tmux/unbind-all-keys.conf
 ```
 
-If you want version-specific settings, then use these lines next:
+If you want to set variables so you know the version and platform, then add these:
 
 ```tmux
 source $HOME/.config/tmux/version.conf
-source $HOME/.config/tmux/version-specific/3.3/tmux.conf
+source $HOME/.config/tmux/platform.conf
 ```
 
-If you want platform-specific settings, then use these lines next:
+If you want version-specific settings, then add any of them, such as:
 
 ```tmux
-source $HOME/.config/tmux/platform.conf
+source $HOME/.config/tmux/version-specific/3.3/mouse.conf
+source $HOME/.config/tmux/version-specific/3.3/status-style-is-black-on-white.conf
+```
+
+If you want platform-specific settings for macOS, then add any of them, such as:
+
+```tmux
 source $HOME/.config/tmux/platform-specific/darwin/tmux.conf
 ```
 
-If you want any of these settings, then add their respective lines:
+If you want any more settings, then add their respective lines:
 
 ```tmux
 source $HOME/.config/tmux/base-index-pane-number-is-1.conf
@@ -63,7 +69,6 @@ source $HOME/.config/tmux/select-layout-via-brackets.conf
 source $HOME/.config/tmux/select-pane-via-hjkl.conf
 source $HOME/.config/tmux/shell.conf
 source $HOME/.config/tmux/split-window.conf
-source $HOME/.config/tmux/status-color-is-black-on-white.conf
 source $HOME/.config/tmux/status-via-powerline.conf
 source $HOME/.config/tmux/switch-session-via-name.conf
 source $HOME/.config/tmux/zoom-via-plus-minus.conf
