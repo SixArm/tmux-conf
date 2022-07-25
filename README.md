@@ -9,39 +9,66 @@ These are our tmux configuration files with annoations. We welcome feedback and 
 * You can source these files in your own `tmux.conf` file.
 
 
+## How to install
+
+You can copy these files anywhere you like.
+
+We prefer to copy them to a user's home config directory:
+
+```sh
+$HOME/.config/tmux
+```
+
+Install
+
+```sh
+git clone https://github.com/SixArm/tmux-conf.git
+mkdir -p $HOME/.config/tmux
+cp -R tmux-conf/sources $HOME/.config/tmux
+```
+
+
 ## How to source these files
 
-You can edit your own `.tmux.conf` file, which is typically at `~/.tmux.conf`, and add lines such as these that set the tmux version and tmux platform:
+You can edit your own `.tmux.conf` file, which is typically at `~/.tmux.conf`, and add lines to it.
+
+If you want a perfectly clean setup, then use this line first:
 
 ```tmux
-source $HOME/tmux-conf/sources/version.conf
-source $HOME/tmux-conf/sources/version-specific/3.0/tmux.conf
-source $HOME/tmux-conf/sources/platform.conf
-source $HOME/tmux-conf/sources/platform-specific/darwin/tmux.conf
+source $HOME/.config/tmux/unbind-all-keys.conf
 ```
 
-Then you can add any of these lines that you like:
+If you want version-specific settings, then use these lines next:
 
 ```tmux
-source $HOME/tmux-conf/sources/base-index-pane-number-is-1.conf
-source $HOME/tmux-conf/sources/mouse.conf
-source $HOME/tmux-conf/sources/prefix-is-control-a.conf
-source $HOME/tmux-conf/sources/select-window-via-meta-number.conf
-source $HOME/tmux-conf/sources/select-layout-via-brackets.conf
-source $HOME/tmux-conf/sources/select-pane-via-hjkl.conf
-source $HOME/tmux-conf/sources/shell.conf
-source $HOME/tmux-conf/sources/split-window.conf
-source $HOME/tmux-conf/sources/status-color-is-black-on-white.conf
-source $HOME/tmux-conf/sources/status-via-powerline.conf
-source $HOME/tmux-conf/sources/switch-session-via-name.conf
-source $HOME/tmux-conf/sources/zoom-via-plus-minus.conf
+source $HOME/.config/tmux/version.conf
+source $HOME/.config/tmux/version-specific/3.3/tmux.conf
 ```
 
-If you want a perfectly clean setup, then you can a line for `unbind-all-keys`, and add it first, because it clears many settings.
+If you want platform-specific settings, then use these lines next:
 
 ```tmux
-source $HOME/tmux-conf/sources/unbind-all-keys.conf
+source $HOME/.config/tmux/platform.conf
+source $HOME/.config/tmux/platform-specific/darwin/tmux.conf
 ```
+
+If you want any of these settings, then add their respective lines:
+
+```tmux
+source $HOME/.config/tmux/base-index-pane-number-is-1.conf
+source $HOME/.config/tmux/mouse.conf
+source $HOME/.config/tmux/prefix-is-control-a.conf
+source $HOME/.config/tmux/select-window-via-meta-number.conf
+source $HOME/.config/tmux/select-layout-via-brackets.conf
+source $HOME/.config/tmux/select-pane-via-hjkl.conf
+source $HOME/.config/tmux/shell.conf
+source $HOME/.config/tmux/split-window.conf
+source $HOME/.config/tmux/status-color-is-black-on-white.conf
+source $HOME/.config/tmux/status-via-powerline.conf
+source $HOME/.config/tmux/switch-session-via-name.conf
+source $HOME/.config/tmux/zoom-via-plus-minus.conf
+```
+
 
 ## Version-specific settings
 
