@@ -48,8 +48,8 @@ source $HOME/.config/tmux/platform.conf
 If you want version-specific settings, then add any of them, such as:
 
 ```tmux
-source $HOME/.config/tmux/version-specific/3.3/mouse.conf
-source $HOME/.config/tmux/version-specific/3.3/status-style-is-black-on-white.conf
+source $HOME/.config/tmux/mouse.conf
+source $HOME/.config/tmux/version-specific/3.2/status-style-is-black-on-white.conf
 ```
 
 If you want platform-specific settings for macOS, then add any of them, such as:
@@ -92,12 +92,18 @@ source $HOME/.config/tmux/popup.conf
 
 ## Version-specific settings
 
-See the  directory `version-specific`.
+See the directory `version-specific`. Each file applies to its own version and newer, until a later version has a file of the same purpose:
+
+| Purpose | Files |
+|---|---|
+| Mouse | `1.9/mouse.conf` (1.9, 2.0), `2.1/mouse.conf` (2.1), `2.2/mouse.conf` (2.2 and newer) |
+| UTF-8 | `1.9/utf8.conf` (1.9 through 2.1) |
+| Status colors | `3.0/status-color-is-black-on-white.conf` (3.0, 3.1), `3.2/status-style-is-black-on-white.conf` (3.2 and newer) |
 
 We use version-specific files to help us run tmux on many systems,
 including systems where we can't easily upgrade tmux ourselves.
 
-For example, when we use version 3.0 then we want to set the mouse like this:
+For example, when we use version 2.2 or newer then we want to set the mouse like this:
 
 ```tmux
 set -g mouse on
@@ -114,7 +120,7 @@ then we want this setting:
 
 ```tmux
 # After copying to a tmux buffer, hit y again to copy to clipboard.
-bind y run "tmux save-buffer - | reattach-to-user-namespace pbcopy"
+bind y run-shell "tmux save-buffer - | pbcopy"
 ```
 
 ## Suppress warnings
