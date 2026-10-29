@@ -24,7 +24,7 @@ Install
 ```sh
 git clone https://github.com/SixArm/tmux-conf.git
 mkdir -p $HOME/.config/tmux
-cp -R tmux-conf/sources $HOME/.config/tmux
+cp -R tmux-conf/sources/. $HOME/.config/tmux
 ```
 
 
@@ -58,6 +58,16 @@ If you want platform-specific settings for macOS, then add any of them, such as:
 source $HOME/.config/tmux/platform-specific/darwin/tmux.conf
 ```
 
+For a ready-made starting point, copy `tmux.conf` (for tmux 3.2 and newer) to `~/.tmux.conf`.
+
+If you use macOS, then see these too, and set your terminal to send Option as Meta (see `platform-specific/darwin/option-is-meta.md`):
+
+```tmux
+source $HOME/.config/tmux/copy-mode-via-vi-keys.conf
+source $HOME/.config/tmux/platform-specific/darwin/copy-mode-via-pbcopy.conf
+source $HOME/.config/tmux/platform-specific/darwin/paste-via-pbpaste.conf
+```
+
 If you want any more settings, then add their respective lines:
 
 ```tmux
@@ -72,6 +82,11 @@ source $HOME/.config/tmux/split-window.conf
 source $HOME/.config/tmux/status-via-powerline.conf
 source $HOME/.config/tmux/switch-session-via-name.conf
 source $HOME/.config/tmux/zoom-via-plus-minus.conf
+source $HOME/.config/tmux/resize-pane-via-hjkl.conf
+source $HOME/.config/tmux/last-window-via-tab.conf
+source $HOME/.config/tmux/aggressive-resize.conf
+source $HOME/.config/tmux/allow-passthrough.conf
+source $HOME/.config/tmux/popup.conf
 ```
 
 
