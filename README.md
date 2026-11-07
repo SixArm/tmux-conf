@@ -353,4 +353,4 @@ M-←, M-→
 * Created: 2014-11-29
 * Updated: 2026-11-07
 * Contact: Joel Parker Henderson (joel@joelparkerhenderson.com)
-* License: GPL
+* License: `MIT OR Apache-2.0 OR GPL-2.0-only OR GPL-3.0-only OR BSD-3-Clause`, or contact us for other terms (see [LICENSE.md](LICENSE.md))

@@ -20,4 +20,9 @@ abstract: >-
   directory per tmux release from 1.9 through 3.8.
 version: 6.0.0
 date-released: '2026-11-07'
-license: See license file
+license:
+  - MIT
+  - Apache-2.0
+  - GPL-2.0-only
+  - GPL-3.0-only
+  - BSD-3-Clause
