@@ -72,6 +72,7 @@ source $HOME/.config/tmux/version.conf                         # store the tmux 
 source $HOME/.config/tmux/platform.conf                        # store the platform in TMUX_PLATFORM
 source $HOME/.config/tmux/prefix-is-control-a.conf             # prefix is C-a instead of C-b
 source $HOME/.config/tmux/shell.conf                           # default shell, history, escape time
+source $HOME/.config/tmux/reload-via-r.conf                    # prefix r reloads config
 source $HOME/.config/tmux/mouse.conf                           # mouse mode on
 source $HOME/.config/tmux/status.conf                          # status bar layout
 source $HOME/.config/tmux/status-style-is-black-on-white.conf  # black-on-white status bar
@@ -93,8 +94,7 @@ source $HOME/.config/tmux/aggressive-resize.conf               # size windows to
 These files are in the version directory for the tmux version shown and newer:
 
 ```tmux
-source $HOME/.config/tmux/true-color.conf                    # 3.2: 24-bit color
-source $HOME/.config/tmux/reload-via-r.conf                  # 3.2: prefix r reloads config
+source $HOME/.config/tmux/true-color.conf                    # 2.2: 24-bit color
 source $HOME/.config/tmux/pane-border.conf                   # 3.2: heavy pane borders
 source $HOME/.config/tmux/popup.conf                         # 3.2: prefix T opens a scratch shell popup
 source $HOME/.config/tmux/extended-keys.conf                 # 3.2: extended keys such as Ctrl-Enter
@@ -146,6 +146,8 @@ When a setting needs different syntax on older tmux, the version directory has a
 | `platform-specific/darwin/copy-mode-via-pbcopy.conf` | 1.9 through 2.3: `copy-pipe`; 2.4 and newer: `copy-pipe-and-cancel` |
 | `zoom-via-plus-minus.conf` | 1.9: both keys toggle the zoom; 2.0 and newer: `if-shell -F` picks zoom or unzoom |
 | `status-style-is-black-on-white.conf` | 1.9 through 3.7: `black` and `white`; 3.8 and newer: theme colors |
+| `reload-via-r.conf` | 1.9 through 3.1: reload `~/.config/tmux/tmux.conf`; 3.2 and newer: reload whichever conf file tmux started with, via `#{config_files}` |
+| `true-color.conf` | 2.2 through 3.1: the `Tc` terminal override; 3.2 and newer: the `RGB` terminal feature |
 
 For example, when we use version 2.2 or newer then we want to set the mouse like this:
 
@@ -194,6 +196,8 @@ bin/check           # check the directory for your installed tmux
 ```
 
 Our GitHub Actions workflow, `.github/workflows/test.yml`, runs `bin/lint`, and builds each tmux release from 1.9 through 3.8 from source, then runs `bin/check` for each release with its own tmux. So every version directory gets loaded by the tmux it is for. `bin/check` also loads every platform-specific file directly, so the macOS files get checked on Linux too. The workflow also runs `bin/check` on macOS with the Homebrew tmux.
+
+A weekly workflow, `.github/workflows/tmux-release.yml`, runs `bin/check-tmux-release`, which fails when tmux has a release that is newer than our newest version directory. To add a version directory, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 `bin/lint` finds mistakes that tmux would report when it reads a file, such as a misspelled option or a value that a version doesn't support. It doesn't run the commands, so it can't find mistakes in what the settings do, such as a key binding that doesn't do what you want.
 
@@ -283,51 +287,94 @@ and blogging about how to set tmux and its related tools.
 
 ## Key bindings
 
-The command key bindings also with our preferred bindings in brackets.
+### Our key bindings
+
+These are the keys that our example `tmux.conf` changes. Prefix keys are pressed after the prefix key, which our `prefix-is-control-a.conf` sets to C-a.
+
+| Key | What it does | File | Replaces the tmux default |
+|---|---|---|---|
+| C-a | The prefix key | `prefix-is-control-a.conf` | C-b |
+| prefix C-a | Send C-a to the program in the pane | `prefix-is-control-a.conf` | |
+| prefix \| | Split left and right, in the current directory | `split-window.conf` | |
+| prefix _ | Split top and bottom, in the current directory | `split-window.conf` | |
+| prefix c | New window, in the current directory | `split-window.conf` | New window, in the session directory |
+| prefix h j k l | Select the pane left, down, up, right | `select-pane-via-hjkl.conf` | prefix l: last window |
+| prefix H J K L | Resize the pane by 5 cells; repeatable | `resize-pane-via-hjkl.conf` | prefix L: last session |
+| prefix S | Switch session by name | `switch-session-via-name.conf` | |
+| prefix + | Zoom the pane to fill the window | `zoom-via-plus-minus.conf` | |
+| prefix - | Unzoom the pane | `zoom-via-plus-minus.conf` | Delete the newest paste buffer |
+| prefix ; | Command prompt | `shell.conf` | Last pane |
+| prefix r | Reload the config | `reload-via-r.conf` | Redraw the client |
+| prefix T | Scratch shell popup; tmux 3.2 and newer | `popup.conf` | 3.8: change the pane title |
+| prefix g | lazygit popup, if lazygit is installed; tmux 3.2 and newer | `popup.conf` | |
+| v, C-v, y | In copy mode: begin selection, rectangle selection, copy | `copy-mode-via-vi-keys.conf` | |
+
+On macOS, the platform-specific files change these keys too:
+
+| Key | What it does | File | Replaces the tmux default |
+|---|---|---|---|
+| prefix y | Copy the newest tmux buffer to the clipboard | `platform-specific/darwin/tmux.conf` | |
+| prefix p | Paste from the clipboard | `platform-specific/darwin/paste-via-pbpaste.conf` | Previous window |
+| y, Enter, mouse drag | In copy mode: copy to the clipboard | `platform-specific/darwin/copy-mode-via-pbcopy.conf` | |
+
+These optional files are not in our example `tmux.conf`, because they replace keys that many people use:
+
+| Key | What it does | File | Replaces the tmux default |
+|---|---|---|---|
+| M-1 to M-9, M-0 | Select window 1 to 9, or 10; no prefix | `select-window-via-meta-number.conf` | Meta digits in programs, such as editors |
+| prefix [ | Even horizontal layout | `select-layout-via-brackets.conf` | Copy mode |
+| prefix ] | Even vertical layout | `select-layout-via-brackets.conf` | Paste the newest buffer |
+
+In tmux 3.8, prefix Tab opens a fast window switcher, and prefix S-Tab opens a fast session switcher.
+
+### tmux default key bindings
+
+These are the tmux default prefix keys. A key marked *changed* has a different binding in our example `tmux.conf`; see above.
 
 ```txt
-C-b         Send the prefix key through to the application. [we prefer C-a]
+C-b         Send the prefix key through to the application. (changed: C-a)
 C-o         Rotate the panes in the current window forwards.
 C-z         Suspend the tmux client.
 !           Break the current pane out of the window.
 "           Split the current pane into two, top and bottom.
 #           List all paste buffers.
 $           Rename the current session.
-| [%]       Split the current pane into two, left and right.
-_           Split the current pane into two, top and bottom.
+%           Split the current pane into two, left and right.
 &           Kill the current window.
 '           Prompt for a window index to select.
 ,           Rename the current window.
-n/a [-]     Delete the most recently copied buffer of text.
+-           Delete the most recently copied buffer of text. (changed)
 .           Prompt for an index to move the current window.
 0 to 9      Select windows 0 to 9.
-; [:]       Enter the tmux command prompt.
-n/a [;]     Move to the previously active pane.
+:           Enter the tmux command prompt.
+;           Move to the previously active pane. (changed)
 =           Choose which buffer to paste interactively from a list.
-+           Zoom the current pane to fill the window. [custom]
--           Unzoom the current pane. [custom]
 ?           List all key bindings.
 D           Choose a client to detach.
+L           Switch the attached client back to the last session. (changed)
+T           Change the pane title; tmux 3.8 and newer. (changed)
 [           Enter copy mode to copy text or view the history.
 ]           Paste the most recently copied buffer of text.
-c           Create a new window.
+c           Create a new window. (changed: in the current directory)
 d           Detach the current client.
 f           Prompt to search for text in open windows.
 i           Display some information about the current window.
-l           Move to the previously selected window.
+l           Move to the previously selected window. (changed)
 n           Change to the next window.
 o           Select the next pane in the current window.
-p           Change to the previous window.
+p           Change to the previous window. (changed on macOS)
 q           Briefly display pane indexes.
-r           Force redraw of the attached client.
+r           Force redraw of the attached client. (changed)
 s           Select a new session for the attached client interactively.
-L           Switch the attached client back to the last session.
 t           Show the time.
 w           Choose the current window interactively.
 x           Kill the current pane.
+z           Toggle the zoom of the current pane.
 {           Swap the current pane with the previous pane.
 }           Swap the current pane with the next pane.
 ~           Show previous messages from tmux, if any.
+Tab         Open the window switcher; tmux 3.8 and newer.
+S-Tab       Open the session switcher; tmux 3.8 and newer.
 Page Up     Enter copy mode and scroll one page up.
 ↑ ↓ ← →     Change to the pane up, down, left, right of the current pane.
 M-1 to M-5  Arrange panes in one of the five preset layouts: even-

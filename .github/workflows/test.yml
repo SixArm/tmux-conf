@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   lint:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
@@ -52,7 +52,7 @@ jobs:
 
   check:
     name: check tmux ${{ matrix.tmux }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +70,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ${{ env.TMUX_PREFIX }}
-          key: tmux-build-${{ matrix.tmux }}-ubuntu-24.04-v1
+          key: tmux-build-${{ matrix.tmux }}-ubuntu-26.04-v1
 
       # Always install these, even when the tmux build is cached, because
       # tmux needs the libevent and ncurses shared libraries to run.
@@ -79,8 +79,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config bison libevent-dev libncurses-dev
 
-      # Old tmux releases predate current compilers, so relax the warnings
-      # that newer gcc treats as errors, and allow common symbols, which
+      # Old tmux releases predate current compilers, so use the C17
+      # standard, because gcc 15 and newer default to C23; relax the warnings
+      # that newer gcc treats as errors; and allow common symbols, which
       # gcc 10 and newer reject by default.
       - name: Build tmux ${{ matrix.tmux }}
         if: steps.cache.outputs.cache-hit != 'true'
@@ -91,7 +92,7 @@ jobs:
           tar xzf tmux.tar.gz
           cd "tmux-$TMUX_RELEASE"
           ./configure --prefix="$TMUX_PREFIX" \
-            CFLAGS="-O1 -fcommon -Wno-error -Wno-implicit-function-declaration -Wno-incompatible-pointer-types -Wno-int-conversion"
+            CFLAGS="-O1 -std=gnu17 -fcommon -Wno-error -Wno-implicit-function-declaration -Wno-incompatible-pointer-types -Wno-int-conversion"
           make -j"$(nproc)"
           make install
 

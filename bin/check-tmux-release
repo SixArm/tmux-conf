@@ -1,0 +1,42 @@
+#!/bin/sh
+##
+# Check whether tmux has a release that is newer than our newest version
+# directory in `sources`.
+#
+# This asks GitHub for the latest tmux release, such as `3.9a`, takes its
+# version, such as `3.9`, and compares it with our newest directory, such
+# as `sources/3.8`. Our GitHub Actions workflow runs this weekly, so we
+# find out when to add a version directory; see CONTRIBUTING.md.
+#
+# Usage:
+#
+#     bin/check-tmux-release
+#
+# Exit status is 0 if we have a directory for the latest tmux release,
+# and 1 otherwise.
+##
+
+set -eu
+
+dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+# The releases page redirects to the latest release's tag, such as
+# https://github.com/tmux/tmux/releases/tag/3.8, which needs no API token.
+url=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/tmux/tmux/releases/latest || true)
+latest_tag=${url##*/tag/}
+latest=$(printf '%s\n' "$latest_tag" | sed -E 's/^[^0-9]*([0-9]+\.[0-9]+).*/\1/')
+ours=$(ls "$dir/sources" | grep -E '^[0-9]+\.[0-9]+$' | sort -t. -k1,1n -k2,2n | tail -1)
+
+if [ -z "$latest" ] || [ "$latest_tag" = "$url" ]; then
+  echo "error: could not read the latest tmux release from GitHub"
+  exit 1
+fi
+
+newest=$(printf '%s\n%s\n' "$latest" "$ours" | sort -t. -k1,1n -k2,2n | tail -1)
+if [ "$newest" = "$ours" ]; then
+  echo "ok: the latest tmux release is $latest_tag, and we have sources/$ours"
+else
+  echo "error: the latest tmux release is $latest_tag, but our newest directory is sources/$ours"
+  echo "To add sources/$latest, see CONTRIBUTING.md."
+  exit 1
+fi
