@@ -93,34 +93,35 @@ source $HOME/.config/tmux/aggressive-resize.conf               # size windows to
 These files are in the version directory for the tmux version shown and newer:
 
 ```tmux
-source $HOME/.config/tmux/shell-for-version-3.2.conf                          # 3.2: 24-bit color, prefix r reloads config
-source $HOME/.config/tmux/pane-border.conf                                    # 3.2: heavy pane borders
-source $HOME/.config/tmux/popup.conf                                          # 3.2: prefix T opens a scratch shell popup
-source $HOME/.config/tmux/extended-keys.conf                                  # 3.2: extended keys such as Ctrl-Enter
-source $HOME/.config/tmux/pane-border-indicators-for-tmux-3.3-and-newer.conf  # 3.3: arrows at the active pane
-source $HOME/.config/tmux/popup-for-version-3.3.conf                          # 3.3: rounded popup borders
-source $HOME/.config/tmux/allow-passthrough.conf                              # 3.3: let programs send escapes to the terminal
-source $HOME/.config/tmux/hyperlinks.conf                                     # 3.4: clickable OSC 8 hyperlinks
-source $HOME/.config/tmux/prefix-timeout.conf                                 # 3.5: cancel the prefix key after 2 seconds
-source $HOME/.config/tmux/allow-set-title.conf                                # 3.5: stop programs from changing pane titles
-source $HOME/.config/tmux/extended-keys-for-version-3.5.conf                  # 3.5: extended keys in CSI u format
-source $HOME/.config/tmux/resize-pane-via-hjkl-for-version-3.6.conf           # 3.6: a longer wait for the first repeat
-source $HOME/.config/tmux/pane-scrollbars.conf                                # 3.6: scrollbars beside each pane in copy mode
-source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.6.conf          # 3.6: selection and position styles in copy mode
-source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.7.conf          # 3.7: relative line numbers in copy mode
-source $HOME/.config/tmux/focus-follows-mouse.conf                            # 3.7: select a pane by moving the mouse into it
-source $HOME/.config/tmux/clipboard-for-version-3.7.conf                      # 3.7: programs can read the system clipboard
-source $HOME/.config/tmux/theme.conf                                          # 3.8: built-in light and dark themes
-source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.8.conf          # 3.8: highlight the cursor line in copy mode
-source $HOME/.config/tmux/pane-scrollbars-for-version-3.8.conf                # 3.8: scrollbars that auto-hide
+source $HOME/.config/tmux/true-color.conf                    # 3.2: 24-bit color
+source $HOME/.config/tmux/reload-via-r.conf                  # 3.2: prefix r reloads config
+source $HOME/.config/tmux/pane-border.conf                   # 3.2: heavy pane borders
+source $HOME/.config/tmux/popup.conf                         # 3.2: prefix T opens a scratch shell popup
+source $HOME/.config/tmux/extended-keys.conf                 # 3.2: extended keys such as Ctrl-Enter
+source $HOME/.config/tmux/pane-border-indicators.conf        # 3.3: arrows at the active pane
+source $HOME/.config/tmux/popup-border-lines.conf            # 3.3: rounded popup borders
+source $HOME/.config/tmux/allow-passthrough.conf             # 3.3: let programs send escapes to the terminal
+source $HOME/.config/tmux/hyperlinks.conf                    # 3.4: clickable OSC 8 hyperlinks
+source $HOME/.config/tmux/prefix-timeout.conf                # 3.5: cancel the prefix key after 2 seconds
+source $HOME/.config/tmux/allow-set-title.conf               # 3.5: stop programs from changing pane titles
+source $HOME/.config/tmux/extended-keys-format.conf          # 3.5: extended keys in CSI u format
+source $HOME/.config/tmux/initial-repeat-time.conf           # 3.6: a longer wait for the first repeat
+source $HOME/.config/tmux/pane-scrollbars.conf               # 3.6: scrollbars beside each pane in copy mode
+source $HOME/.config/tmux/copy-mode-styles.conf              # 3.6: selection and position styles in copy mode
+source $HOME/.config/tmux/copy-mode-line-numbers.conf        # 3.7: relative line numbers in copy mode
+source $HOME/.config/tmux/focus-follows-mouse.conf           # 3.7: select a pane by moving the mouse into it
+source $HOME/.config/tmux/get-clipboard.conf                 # 3.7: programs can read the system clipboard
+source $HOME/.config/tmux/theme.conf                         # 3.8: built-in light and dark themes
+source $HOME/.config/tmux/copy-mode-current-line-style.conf  # 3.8: highlight the cursor line in copy mode
+source $HOME/.config/tmux/pane-scrollbars-auto-hide.conf     # 3.8: scrollbars that auto-hide
 ```
 
-A file named `*-for-version-X.Y.conf` adds settings to the file of the same name without the suffix, so source both, such as:
+Some of these files add settings to a related file, which their comments name. Source the related file first, such as:
 
 ```tmux
 source $HOME/.config/tmux/copy-mode-via-vi-keys.conf
-source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.7.conf
-source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.8.conf
+source $HOME/.config/tmux/copy-mode-line-numbers.conf
+source $HOME/.config/tmux/copy-mode-current-line-style.conf
 ```
 
 In tmux 3.8, mouse mode is on by default, prefix Tab opens a fast window switcher, prefix S-Tab opens a fast session switcher, and floating panes are available in an early release, via the `new-pane` command, which is bound to `prefix *` by default.
@@ -201,7 +202,9 @@ Our GitHub Actions workflow, `.github/workflows/test.yml`, runs `bin/lint`, and 
 
 A good tmux primer:
 
-* http://tangosource.com/blog/a-tmux-crash-course-tips-and-tweaks/
+* https://github.com/tmux/tmux/wiki/Getting-Started
+
+* https://web.archive.org/web/2016/http://tangosource.com/blog/a-tmux-crash-course-tips-and-tweaks/ (archived)
 
 
 ## Notation
@@ -256,9 +259,11 @@ Credits:
 
 ## See also
 
-* http://blog.hawkhost.com/2010/07/02/tmux-%E2%80%93-the-terminal-multiplexer-part-2/
+* https://github.com/tmux/tmux/wiki
 
-* https://wiki.archlinux.org/index.php/Tmux
+* https://wiki.archlinux.org/title/Tmux
+
+* https://web.archive.org/web/2016/http://blog.hawkhost.com/2010/07/02/tmux-%E2%80%93-the-terminal-multiplexer-part-2/ (archived)
 
 
 ## Thanks
@@ -268,11 +273,11 @@ and blogging about how to set tmux and its related tools.
 
 * https://gist.github.com/andreyvit/2921703
 * https://github.com/terryma/dotfiles/blob/master/.tmux.conf
-* http://www.mindfuzz.net/?p=178
-* http://tangledhelix.com/blog/2012/07/16/tmux-and-mouse-mode/
+* mindfuzz.net (no longer online)
+* https://web.archive.org/web/2016/http://tangledhelix.com/blog/2012/07/16/tmux-and-mouse-mode/ (archived)
 * http://www.unwiredcouch.com/2013/11/15/my-tmux-setup.html
-* http://stackoverflow.com/questions/35016458
-* http://stackoverflow.com/users/5353461/tom-hale
+* https://stackoverflow.com/questions/35016458
+* https://stackoverflow.com/users/5353461/tom-hale
 * https://github.com/HaleTom
 
 
@@ -344,8 +349,8 @@ M-←, M-→
 ## Tracking
 
 * Package: sixarm.com/tmux-conf
-* Version: 5.1.0
+* Version: 6.0.0
 * Created: 2014-11-29
-* Updated: 2020-03-20
+* Updated: 2026-11-07
 * Contact: Joel Parker Henderson (joel@joelparkerhenderson.com)
 * License: GPL

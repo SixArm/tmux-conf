@@ -3,7 +3,8 @@
 # Check that a version directory's example tmux.conf loads without errors.
 #
 # This copies `sources/<version>` into a temporary
-# `~/.config/tmux`, starts a separate tmux server on its own socket, with
+# `~/.config/tmux`, starts a separate tmux server on its own socket in the
+# same temporary directory, with
 # no config, then sources the example `tmux.conf`, which sources the other
 # files, and reports any errors. It doesn't touch any tmux server you are
 # using, or your own config files.
@@ -41,9 +42,8 @@ if [ "$version" != "$installed" ]; then
 fi
 
 tmp=$(mktemp -d)
-socket="tmux-conf-check-$$"
 cleanup() {
-  HOME="$tmp" tmux -L "$socket" kill-server 2>/dev/null || true
+  HOME="$tmp" tmux -S "$tmp/tmux.sock" kill-server 2>/dev/null || true
   rm -rf "$tmp"
 }
 trap cleanup EXIT
@@ -52,13 +52,13 @@ mkdir -p "$tmp/.config/tmux"
 cp -R "$src/." "$tmp/.config/tmux/"
 
 echo "$(tmux -V), files for tmux $version"
-HOME="$tmp" tmux -L "$socket" -f /dev/null new-session -d
+HOME="$tmp" tmux -S "$tmp/tmux.sock" -f /dev/null new-session -d
 
 # Source one file, and print any errors. Return 1 if there are errors.
 check_file() {
   rel=$1
   status=0
-  output=$(HOME="$tmp" tmux -L "$socket" source-file "$tmp/.config/tmux/$rel" 2>&1) || status=$?
+  output=$(HOME="$tmp" tmux -S "$tmp/tmux.sock" source-file "$tmp/.config/tmux/$rel" 2>&1) || status=$?
   # tmux 1.9 prints "set option: name -> value" for each option that a
   # client command sets. These are information, not errors, so ignore them.
   errors=$(printf '%s\n' "$output" | grep -v -e '^set option: ' -e '^$' || true)

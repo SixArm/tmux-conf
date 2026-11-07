@@ -24,11 +24,11 @@ jobs:
   lint:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The tmux source code for a release tag never changes, so keep it
       # between runs, and add any newly needed releases.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .cache/tmux-src
           key: tmux-src-${{ github.run_id }}
@@ -44,7 +44,7 @@ jobs:
     env:
       TERM: xterm-256color
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: brew install tmux
       - run: |
           tmux -V
@@ -63,11 +63,11 @@ jobs:
       TMUX_RELEASE: ${{ matrix.tmux }}
       TMUX_PREFIX: ${{ github.workspace }}/.tmux-build/${{ matrix.tmux }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Cache tmux build
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.TMUX_PREFIX }}
           key: tmux-build-${{ matrix.tmux }}-ubuntu-24.04-v1

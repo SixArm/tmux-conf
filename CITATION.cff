@@ -16,5 +16,8 @@ identifiers:
     description: tmux-conf
 repository-code: 'https://github.com/SixArm/tmux-conf/'
 abstract: >-
-  tmux-conf
+  tmux configuration files with annotations, organized in one
+  directory per tmux release from 1.9 through 3.8.
+version: 6.0.0
+date-released: '2026-11-07'
 license: See license file
