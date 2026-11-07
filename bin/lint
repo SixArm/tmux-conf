@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""
+Lint our tmux config files against the tmux source code of each release.
+
+For each version directory in `sources/version-specific`, this reads the
+tmux source code at that release tag, as text, and checks every config
+file in the directory for:
+
+* commands, command aliases, flags, and argument counts
+* option names, option scope (-g, setw), and option values
+* copy mode commands, for `send-keys -X` and for the older `bind -t vi-copy`
+* key names, format variables such as `#{pane_current_path}`, colour names,
+  and terminal feature names
+* brace blocks, which need tmux 3.0 or newer
+* `source-file` targets, which must exist in the version directory
+* no `set -q`, and no in-file version checks
+
+The tmux source code is downloaded from GitHub on first use, and cached in
+`.cache/tmux-src`. The code is only read, never built or run.
+
+Usage:
+
+    bin/lint            lint every version directory
+    bin/lint 3.8 2.6    lint the given version directories
+
+Exit status is 0 if every file passes, and 1 otherwise.
+"""
+import json, os, re, sys, urllib.request
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VDIR = os.path.join(ROOT, 'sources', 'version-specific')
+SRC = os.path.join(ROOT, '.cache', 'tmux-src')
+ONLY = sys.argv[1:]
+WANT = {'options-table.c', 'format.c', 'cfg.c', 'key-string.c', 'window-copy.c',
+        'mode-key.c', 'tty-features.c', 'colour.c'}
+
+def vt(v): return tuple(int(x) for x in v.split('.'))
+
+def fetch(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'tmux-conf-lint'})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read()
+
+def ensure_source(v):
+    """Download the tmux source files that the lint reads, for tag v."""
+    d = os.path.join(SRC, v)
+    done = os.path.join(d, '.complete')
+    if os.path.exists(done): return
+    os.makedirs(d, exist_ok=True)
+    tree = json.loads(fetch(f'https://api.github.com/repos/tmux/tmux/git/trees/{v}'))
+    for x in tree['tree']:
+        p = x['path']
+        if p in WANT or (p.startswith('cmd-') and p.endswith('.c')):
+            with open(os.path.join(d, p), 'wb') as f:
+                f.write(fetch(f'https://raw.githubusercontent.com/tmux/tmux/{v}/{p}'))
+    open(done, 'w').close()
+
+# ---------------------------------------------------------------- tmux model
+class Model:
+    def __init__(self, v):
+        self.v = v
+        d = os.path.join(SRC, v)
+        self.read = lambda f: open(os.path.join(d, f), errors='replace').read() if os.path.exists(os.path.join(d, f)) else ''
+        self.cmds = {}      # name/alias -> (canonical, getopt, min, max)
+        for f in os.listdir(d):
+            if f.startswith('cmd-') and f.endswith('.c'):
+                self._parse_cmds(self.read(f))
+        self.options = {}   # name -> dict(scope, type, choices, min, max)
+        self._parse_options(self.read('options-table.c'))
+        self.format_src = self.read('format.c') + self.read('cfg.c') + self.read('window-copy.c')
+        self.keys_src = self.read('key-string.c')
+        self.copy_src = self.read('window-copy.c')
+        self.modekey_src = self.read('mode-key.c')
+        self.features_src = self.read('tty-features.c')
+        self.colour_src = self.read('colour.c')
+
+    def _parse_cmds(self, s):
+        # Newer: .name = "x", .alias = "y", .args = { "flags", min, max ...
+        for m in re.finditer(r'const struct cmd_entry \w+ = \{(.*?)\n\};', s, re.S):
+            body = m.group(1)
+            n = re.search(r'\.name\s*=\s*"([^"]+)"', body)
+            if n:
+                name = n.group(1)
+                a = re.search(r'\.alias\s*=\s*"([^"]+)"', body)
+                g = re.search(r'\.args\s*=\s*\{\s*"([^"]*)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)', body)
+                alias = a.group(1) if a else None
+            else:
+                # Older: "name", "alias"|NULL, "flags", min, max,
+                o = re.match(r'\s*"([^"]+)"\s*,\s*(?:"([^"]+)"|NULL)\s*,\s*"([^"]*)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)', body)
+                if not o: continue
+                name, alias = o.group(1), o.group(2)
+                getopt, mn, mx = o.group(3), int(o.group(4)), int(o.group(5))
+                self.cmds[name] = (name, getopt, mn, mx)
+                if alias: self.cmds[alias] = (name, getopt, mn, mx)
+                continue
+            if not g: continue
+            ent = (name, g.group(1), int(g.group(2)), int(g.group(3)))
+            self.cmds[name] = ent
+            if alias: self.cmds[alias] = ent
+
+    def _parse_options(self, s):
+        lists = {}
+        for m in re.finditer(r'static const char \*(\w+)\[\]\s*=\s*\{(.*?)\};', s, re.S):
+            lists[m.group(1)] = re.findall(r'"([^"]*)"', m.group(2))
+        # Track old-style separate tables.
+        table_starts = [(m.start(), m.group(1)) for m in re.finditer(r'const struct options_table_entry (\w+)\[\]', s)]
+        def old_scope(pos):
+            sc = None
+            for st, nm in table_starts:
+                if st <= pos: sc = nm
+            return {'server_options_table':'server','session_options_table':'session','window_options_table':'window'}.get(sc)
+        for m in re.finditer(r'\{\s*\.name\s*=\s*"([^"]+)"(.*?)\n\t\}', s, re.S):
+            name, body = m.group(1), m.group(2)
+            t = re.search(r'\.type\s*=\s*OPTIONS_TABLE_(\w+)', body)
+            sc = re.search(r'\.scope\s*=\s*([A-Z_|\s]+)', body)
+            if sc:
+                scope = 'server' if 'SERVER' in sc.group(1) else 'session' if 'SESSION' in sc.group(1) else 'window'
+            else:
+                scope = old_scope(m.start())
+            ch = re.search(r'\.choices\s*=\s*(\w+)', body)
+            mn = re.search(r'\.minimum\s*=\s*(-?\d+)', body)
+            mx = re.search(r'\.maximum\s*=\s*(-?\d+|INT_MAX|SHRT_MAX)', body)
+            self.options[name] = dict(
+                scope=scope, type=t.group(1) if t else '?',
+                choices=lists.get(ch.group(1)) if ch else None,
+                min=int(mn.group(1)) if mn else None,
+                max=(int(mx.group(1)) if mx and mx.group(1).lstrip('-').isdigit() else None),
+                array=('OPTIONS_TABLE_IS_ARRAY' in body))
+
+    def has_format(self, name):
+        return re.search(r'"%s"' % re.escape(name), self.format_src) is not None
+    def has_key(self, k):
+        named = set(re.findall(r'\{\s*"([A-Za-z0-9]+)"\s*,', self.keys_src))
+        for base in re.findall(r'KEYC_MOUSE_STRING\(\s*\w+\s*,\s*(\w+)\s*\)', self.keys_src):
+            for loc in ('Pane', 'Status', 'Border', 'StatusLeft', 'StatusRight', 'StatusDefault'):
+                named.add(base + loc)
+        while re.match(r'^[CMS]-', k): k = k[2:]
+        return len(k) == 1 or k in named or k.lower() in {n.lower() for n in named}
+    def has_copy_command(self, c):
+        return re.search(r'"%s"' % re.escape(c), self.copy_src) is not None
+    def has_modekey_command(self, c):
+        return re.search(r'"%s"' % re.escape(c), self.modekey_src) is not None
+    def has_feature(self, f):
+        return re.search(r'"%s"' % re.escape(f), self.features_src) is not None
+    def has_colour(self, c):
+        c = c.lower()
+        if re.fullmatch(r'(colou?r\d{1,3}|#[0-9a-f]{6}|default|terminal|\d+)', c): return True
+        if c in {'black','red','green','yellow','blue','magenta','cyan','white'}: return True
+        if c.startswith('bright') and c[6:] in {'black','red','green','yellow','blue','magenta','cyan','white'}: return True
+        return re.search(r'"%s"' % re.escape(c), self.colour_src) is not None
+
+# ---------------------------------------------------------------- tokenizer
+def tokenize(text):
+    """Return list of commands; each command is a list of (token, quoted)
+    plus brace blocks as ('{BLOCK}', text). Handles comments, quotes,
+    line continuation, '\;' (kept as literal ';' arg) and bare ';'."""
+    cmds, cur, i, n = [], [], 0, len(text)
+    tok, quoted, in_tok = '', False, False
+    def end_tok():
+        nonlocal tok, quoted, in_tok
+        if in_tok: cur.append((tok, quoted))
+        tok, quoted, in_tok = '', False, False
+    def end_cmd():
+        nonlocal cur
+        end_tok()
+        if cur: cmds.append(cur)
+        cur = []
+    while i < n:
+        c = text[i]
+        if c == '\\' and i + 1 < n and text[i+1] == '\n':
+            i += 2; continue
+        if c == '\n':
+            end_cmd(); i += 1; continue
+        if c in ' \t':
+            end_tok(); i += 1; continue
+        if c == '#' and not in_tok:
+            while i < n and text[i] != '\n': i += 1
+            continue
+        if c == "'":
+            j = text.index("'", i + 1)
+            tok += text[i+1:j]; quoted = True; in_tok = True; i = j + 1; continue
+        if c == '"':
+            j = i + 1; s = ''
+            while text[j] != '"':
+                if text[j] == '\\' and j + 1 < n: s += text[j+1]; j += 2
+                else: s += text[j]; j += 1
+            tok += s; quoted = True; in_tok = True; i = j + 1; continue
+        if c == '\\' and i + 1 < n and text[i+1] == ';':
+            end_tok(); cur.append((';', True)); i += 2; continue
+        if c == ';' and not in_tok:
+            end_cmd(); i += 1; continue
+        if c == '{' and not in_tok and (i + 1 >= n or text[i+1] in ' \t\n'):
+            # brace block: find matching close brace at line level
+            depth, j = 1, i + 1
+            while j < n and depth:
+                if text[j] == '{' and (j + 1 >= n or text[j+1] in ' \t\n'): depth += 1
+                elif text[j] == '}' and (text[j-1] in ' \t\n'): depth -= 1
+                j += 1
+            end_tok(); cur.append(('{BLOCK}', text[i+1:j-1])); i = j; continue
+        tok += c; in_tok = True; i += 1
+    end_cmd()
+    return cmds
+
+# ---------------------------------------------------------------- linter
+class Linter:
+    def __init__(self, m, vdir):
+        self.m, self.vdir, self.errors = m, vdir, []
+    def err(self, where, msg): self.errors.append(f"{where}: {msg}")
+
+    def lint_file(self, rel):
+        p = os.path.join(self.vdir, rel)
+        text = open(p).read()
+        self.lint_text(text, rel, os.path.dirname(rel))
+        if re.search(r'sort -C -V', text): self.err(rel, "contains an in-file version check")
+
+    def lint_text(self, text, where, reldir):
+        for cmd in tokenize(text):
+            self.lint_cmd(cmd, where, reldir)
+
+    def getopt(self, name, args, where):
+        ent = self.m.cmds.get(name)
+        if not ent:
+            self.err(where, f"unknown command '{name}'"); return None, None, []
+        canon, spec, mn, mx = ent
+        flags, pos, i = {}, [], 0
+        while i < len(args):
+            t, q = args[i]
+            if t == '{BLOCK}' or q or not t.startswith('-') or t == '-' or pos:
+                pos.append(args[i]); i += 1; continue
+            if t == '--': pos += args[i+1:]; break
+            j = 1
+            while j < len(t):
+                f = t[j]
+                k = spec.find(f)
+                if k < 0 or f == ':':
+                    self.err(where, f"{canon}: unknown flag -{f}"); j += 1; continue
+                if k + 1 < len(spec) and spec[k+1] == ':':
+                    if j + 1 < len(t): flags[f] = t[j+1:]
+                    else:
+                        i += 1
+                        flags[f] = args[i][0] if i < len(args) else None
+                    break
+                flags[f] = True; j += 1
+            i += 1
+        if len(pos) < mn or (mx >= 0 and len(pos) > mx):
+            # bind-key/if-shell carry commands as trailing args; checked by caller
+            if canon not in ('bind-key',):
+                self.err(where, f"{canon}: {len(pos)} arguments, expected {mn}..{mx if mx>=0 else 'any'}")
+        return canon, flags, pos
+
+    def check_formats(self, s, where):
+        for expr in re.findall(r'#\{([^}]*)\}', s):
+            name = expr.split(':')[-1] if ':' in expr else expr
+            mods = expr.split(':')[:-1]
+            if 'd' in mods and 'dirname' not in self.m.format_src:
+                self.err(where, f"format modifier d: not supported")
+            if re.fullmatch(r'[a-z_]+', name) and not self.m.has_format(name):
+                self.err(where, f"unknown format variable #{{{name}}}")
+
+    def check_style(self, s, where):
+        for part in re.split(r'[,\s]', s):
+            if '=' in part:
+                k, v = part.split('=', 1)
+                if k in ('fg', 'bg', 'us') and not self.m.has_colour(v):
+                    self.err(where, f"unknown colour '{v}'")
+
+    def lint_cmd(self, cmd, where, reldir):
+        if not cmd: return
+        name, args = cmd[0][0], cmd[1:]
+        if name == '{BLOCK}': return
+        if vt(self.m.v) < (3, 0) and any(t == '{BLOCK}' for t, _ in args):
+            self.err(where, "brace blocks need tmux 3.0 or newer")
+        for t, _ in args:
+            if t != '{BLOCK}': self.check_formats(t, where)
+        canon, flags, pos = self.getopt(name, args, where)
+        if canon is None: return
+        sub = lambda tokens: [self.lint_cmd(c, where, reldir) for c in split_semis(tokens)]
+        if canon in ('set-option', 'set-window-option'):
+            self.lint_set(canon, flags, pos, where)
+        elif canon == 'bind-key':
+            if not pos: self.err(where, "bind-key: missing key"); return
+            key = pos[0][0]
+            if not self.m.has_key(key): self.err(where, f"unknown key '{key}'")
+            rest = pos[1:]
+            if flags.get('t'):
+                if not rest or not self.m.has_modekey_command(rest[0][0]):
+                    self.err(where, f"unknown mode key command '{rest[0][0] if rest else ''}'")
+            else:
+                if flags.get('T') == 'copy-mode-vi' and vt(self.m.v) < (2, 4):
+                    self.err(where, "key table copy-mode-vi needs tmux 2.4 or newer")
+                sub(rest)
+        elif canon == 'if-shell':
+            # String-form commands; brace blocks are linted below.
+            for t, q in pos[1:3]:
+                if t != '{BLOCK}' and t.strip(): self.lint_text(t, where, reldir)
+        elif canon == 'command-prompt':
+            if pos: self.lint_text(pos[-1][0].replace("'%%'", "x"), where, reldir)
+        elif canon == 'send-keys' and flags.get('X'):
+            for t, _ in pos:
+                if not self.m.has_copy_command(t): self.err(where, f"unknown copy mode command '{t}'")
+                break
+        elif canon == 'source-file':
+            for t, _ in pos:
+                if '#{' in t.replace('#{d:current_file}', ''): continue  # path known only at run time
+                path = t.replace('#{d:current_file}', '.' if not reldir else reldir).replace('~/.config/tmux', '.')
+                if not os.path.exists(os.path.normpath(os.path.join(self.vdir, path))):
+                    self.err(where, f"source-file target missing: {t}")
+
+    def lint_set(self, canon, flags, pos, where):
+        if flags.get('q'): self.err(where, "uses set -q, which hides errors")
+        if not pos: self.err(where, "set: missing option"); return
+        name = pos[0][0]
+        if name.startswith('@'): return
+        opt = self.m.options.get(name)
+        if not opt:
+            self.err(where, f"unknown option '{name}'"); return
+        if canon == 'set-window-option' and opt['scope'] != 'window':
+            self.err(where, f"setw used for {opt['scope']} option '{name}'")
+        if opt['scope'] in ('session', 'window') and not flags.get('g') and not flags.get('t'):
+            self.err(where, f"option '{name}' needs -g")
+        if len(pos) < 2: return
+        val = pos[1][0]
+        typ = opt['type']
+        if typ == 'CHOICE' and opt['choices'] and val not in opt['choices']:
+            self.err(where, f"option '{name}': value '{val}' not in {opt['choices']}")
+        elif typ == 'FLAG' and val not in ('on', 'off', 'yes', 'no', '1', '0'):
+            self.err(where, f"option '{name}': value '{val}' is not on/off")
+        elif typ == 'NUMBER':
+            if not re.fullmatch(r'-?\d+', val): self.err(where, f"option '{name}': value '{val}' is not a number")
+            else:
+                x = int(val)
+                if opt['min'] is not None and x < opt['min'] or opt['max'] is not None and x > opt['max']:
+                    self.err(where, f"option '{name}': value {x} out of range")
+        if name.endswith('-style') or typ == 'STYLE':
+            self.check_style(val, where)
+        if name in ('status-fg', 'status-bg') and not self.m.has_colour(val):
+            self.err(where, f"unknown colour '{val}'")
+        if name == 'terminal-features':
+            for feat in val.lstrip(',').split(':')[1:]:
+                if not self.m.has_feature(feat): self.err(where, f"unknown terminal feature '{feat}'")
+
+def split_semis(tokens):
+    out, cur = [], []
+    for t in tokens:
+        if t == (';', True): out.append(cur); cur = []
+        else: cur.append(t)
+    out.append(cur)
+    return [c for c in out if c]
+
+# Patch: recurse into brace blocks everywhere.
+_orig = Linter.lint_cmd
+def lint_cmd(self, cmd, where, reldir):
+    _orig(self, cmd, where, reldir)
+    for t, q in cmd[1:]:
+        if t == '{BLOCK}':
+            self.lint_text(q, where, reldir)
+Linter.lint_cmd = lint_cmd
+
+# ---------------------------------------------------------------- main
+versions = sorted(os.listdir(VDIR), key=vt)
+total = 0
+for v in versions:
+    if ONLY and v not in ONLY: continue
+    ensure_source(v)
+    m = Model(v)
+    lt = Linter(m, os.path.join(VDIR, v))
+    files = []
+    for root, _, fs in os.walk(os.path.join(VDIR, v)):
+        for f in fs:
+            if f.endswith('.conf'): files.append(os.path.relpath(os.path.join(root, f), os.path.join(VDIR, v)))
+    for rel in sorted(files): lt.lint_file(rel)
+    total += len(lt.errors)
+    print(f"{'ok' if not lt.errors else 'error'}: {v}: {len(files)} files, {len(lt.errors)} problems")
+    for e in lt.errors: print("   " + e)
+sys.exit(1 if total else 0)

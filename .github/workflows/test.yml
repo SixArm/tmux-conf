@@ -1,0 +1,86 @@
+# Test our tmux config files.
+#
+# lint:  check every version directory against the tmux source code of
+#        that release, via `bin/lint`.
+#
+# check: for each tmux release, build that release from source, then load
+#        the version directory's example `tmux.conf` in that tmux, via
+#        `bin/check`.
+
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tmux source code for a release tag never changes, so keep it
+      # between runs, and add any newly needed releases.
+      - uses: actions/cache@v4
+        with:
+          path: .cache/tmux-src
+          key: tmux-src-${{ github.run_id }}
+          restore-keys: tmux-src-
+
+      - run: bin/lint
+
+  check:
+    name: check tmux ${{ matrix.tmux }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        tmux: ["1.9", "2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9",
+               "3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8"]
+    env:
+      TERM: xterm-256color
+      TMUX_RELEASE: ${{ matrix.tmux }}
+      TMUX_PREFIX: ${{ github.workspace }}/.tmux-build/${{ matrix.tmux }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache tmux build
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TMUX_PREFIX }}
+          key: tmux-build-${{ matrix.tmux }}-ubuntu-24.04-v1
+
+      - name: Install build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config bison libevent-dev libncurses-dev
+
+      # Old tmux releases predate current compilers, so relax the warnings
+      # that newer gcc treats as errors, and allow common symbols, which
+      # gcc 10 and newer reject by default.
+      - name: Build tmux ${{ matrix.tmux }}
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/build" && cd "$RUNNER_TEMP/build"
+          curl -fsSL -o tmux.tar.gz \
+            "https://github.com/tmux/tmux/releases/download/$TMUX_RELEASE/tmux-$TMUX_RELEASE.tar.gz"
+          tar xzf tmux.tar.gz
+          cd "tmux-$TMUX_RELEASE"
+          ./configure --prefix="$TMUX_PREFIX" \
+            CFLAGS="-O1 -fcommon -Wno-error -Wno-implicit-function-declaration -Wno-incompatible-pointer-types -Wno-int-conversion"
+          make -j"$(nproc)"
+          make install
+
+      - name: Add tmux to PATH
+        run: echo "$TMUX_PREFIX/bin" >> "$GITHUB_PATH"
+
+      - name: Check tmux ${{ matrix.tmux }}
+        run: |
+          tmux -V
+          bin/check "$TMUX_RELEASE"

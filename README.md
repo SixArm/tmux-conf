@@ -1,6 +1,6 @@
 # tmux-conf
 
-These are our tmux configuration files with annoations. We welcome feedback and pull requests.
+These are our tmux configuration files with annotations. We welcome feedback and pull requests.
 
 * You can read the files to learn what they do, and we annotate the files to help explain.
 
@@ -11,26 +11,46 @@ These are our tmux configuration files with annoations. We welcome feedback and 
 
 ## How to install
 
-You can copy these files anywhere you like.
+Our files are in version directories, one for each tmux release from 1.9 through 3.8:
 
-We prefer to copy them to a user's home config directory:
-
-```sh
-$HOME/.config/tmux
+```txt
+sources/version-specific/1.9
+sources/version-specific/2.0
+...
+sources/version-specific/3.8
 ```
 
-Install
+Each version directory is complete: it has every file that works on that tmux version, plus an example `tmux.conf` that sources them. Pick the directory that matches your tmux version, which `tmux -V` prints.
+
+Install:
 
 ```sh
 git clone https://github.com/SixArm/tmux-conf.git
+version=$(tmux -V | sed -E 's/^[^0-9]*([0-9]+\.[0-9]+).*/\1/')
 mkdir -p $HOME/.config/tmux
-cp -R tmux-conf/sources/. $HOME/.config/tmux
+cp -R tmux-conf/sources/version-specific/$version/. $HOME/.config/tmux
 ```
 
+This copies the example `tmux.conf` too:
 
-## How to source these files
+* For tmux 3.1 and newer, tmux reads `~/.config/tmux/tmux.conf` when you don't have a `~/.tmux.conf` file.
 
-You can edit your own tmux configuration file, and add lines to it.
+* For tmux 3.2 and newer, the example finds the other files relative to its own location, so you can copy the files to any directory, such as `${XDG_CONFIG_HOME:-$HOME/.config}/tmux`.
+
+* For tmux older than 3.2, the example sources the other files from `~/.config/tmux`.
+
+* For tmux older than 3.1, tmux reads only `~/.tmux.conf`, so create it with this line: `source-file ~/.config/tmux/tmux.conf`
+
+To check that the example `tmux.conf` loads without errors on your tmux version, run:
+
+```sh
+tmux-conf/bin/check
+```
+
+The check is meaningful only for the directory that matches your installed tmux, because older directories use syntax that newer tmux no longer accepts.
+
+
+## Config file location
 
 For the tmux configuration file location, we recommend changing from `~/.tmux.conf` to a more standard `${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf`. This follows the XDG Base Directory specification, keeps the file next to the files sourced here, and is supported by tmux 3.1 and newer.
 
@@ -39,77 +59,92 @@ mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/tmux"
 mv ~/.tmux.conf "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
 ```
 
-If you want a perfectly clean setup, then use this line first:
+
+## How to source these files
+
+You can use our example `tmux.conf` as is, or edit your own tmux configuration file, and add lines to it.
+
+These files are in every version directory:
 
 ```tmux
-source $HOME/.config/tmux/unbind-all-keys.conf
+source $HOME/.config/tmux/unbind-all-keys.conf                 # unbind every key, for a clean slate
+source $HOME/.config/tmux/version.conf                         # store the tmux version in TMUX_VERSION
+source $HOME/.config/tmux/platform.conf                        # store the platform in TMUX_PLATFORM
+source $HOME/.config/tmux/prefix-is-control-a.conf             # prefix is C-a instead of C-b
+source $HOME/.config/tmux/shell.conf                           # default shell, history, escape time
+source $HOME/.config/tmux/mouse.conf                           # mouse mode on
+source $HOME/.config/tmux/status.conf                          # status bar layout
+source $HOME/.config/tmux/status-style-is-black-on-white.conf  # black-on-white status bar
+source $HOME/.config/tmux/status-color-is-black-on-white.conf  # black-on-white status bar, via status-fg and status-bg
+source $HOME/.config/tmux/status-via-powerline.conf            # status bar via powerline.sh, which must be installed
+source $HOME/.config/tmux/base-index-pane-number-is-1.conf     # number windows and panes from 1
+source $HOME/.config/tmux/split-window.conf                    # prefix | and _ split in the current directory
+source $HOME/.config/tmux/select-pane-via-hjkl.conf            # prefix h j k l select a pane
+source $HOME/.config/tmux/resize-pane-via-hjkl.conf            # prefix H J K L resize a pane
+source $HOME/.config/tmux/select-layout-via-brackets.conf      # prefix [ and ] select even layouts, replacing copy mode
+source $HOME/.config/tmux/select-window-via-meta-number.conf   # M-1 through M-9 select a window
+source $HOME/.config/tmux/switch-session-via-name.conf         # prefix S switches session by name
+source $HOME/.config/tmux/zoom-via-plus-minus.conf             # prefix + and - zoom and unzoom a pane
+source $HOME/.config/tmux/copy-mode-via-vi-keys.conf           # vi keys in copy mode: v selects, y copies
+source $HOME/.config/tmux/clipboard.conf                       # programs can copy to the system clipboard
+source $HOME/.config/tmux/aggressive-resize.conf               # size windows to the smallest viewing client
 ```
 
-If you want to set variables so you know the version and platform, then add these:
+These files are in the version directory for the tmux version shown and newer:
 
 ```tmux
-source $HOME/.config/tmux/version.conf
-source $HOME/.config/tmux/platform.conf
+source $HOME/.config/tmux/shell-for-version-3.2.conf                          # 3.2: 24-bit color, prefix r reloads config
+source $HOME/.config/tmux/pane-border.conf                                    # 3.2: heavy pane borders
+source $HOME/.config/tmux/popup.conf                                          # 3.2: prefix T opens a scratch shell popup
+source $HOME/.config/tmux/extended-keys.conf                                  # 3.2: extended keys such as Ctrl-Enter
+source $HOME/.config/tmux/pane-border-indicators-for-tmux-3.3-and-newer.conf  # 3.3: arrows at the active pane
+source $HOME/.config/tmux/popup-for-version-3.3.conf                          # 3.3: rounded popup borders
+source $HOME/.config/tmux/allow-passthrough.conf                              # 3.3: let programs send escapes to the terminal
+source $HOME/.config/tmux/hyperlinks.conf                                     # 3.4: clickable OSC 8 hyperlinks
+source $HOME/.config/tmux/prefix-timeout.conf                                 # 3.5: cancel the prefix key after 2 seconds
+source $HOME/.config/tmux/allow-set-title.conf                                # 3.5: stop programs from changing pane titles
+source $HOME/.config/tmux/extended-keys-for-version-3.5.conf                  # 3.5: extended keys in CSI u format
+source $HOME/.config/tmux/resize-pane-via-hjkl-for-version-3.6.conf           # 3.6: a longer wait for the first repeat
+source $HOME/.config/tmux/pane-scrollbars.conf                                # 3.6: scrollbars beside each pane in copy mode
+source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.6.conf          # 3.6: selection and position styles in copy mode
+source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.7.conf          # 3.7: relative line numbers in copy mode
+source $HOME/.config/tmux/focus-follows-mouse.conf                            # 3.7: select a pane by moving the mouse into it
+source $HOME/.config/tmux/clipboard-for-version-3.7.conf                      # 3.7: programs can read the system clipboard
+source $HOME/.config/tmux/theme.conf                                          # 3.8: built-in light and dark themes
+source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.8.conf          # 3.8: highlight the cursor line in copy mode
+source $HOME/.config/tmux/pane-scrollbars-for-version-3.8.conf                # 3.8: scrollbars that auto-hide
 ```
 
-If you want version-specific settings, then add any of them, such as:
-
-```tmux
-source $HOME/.config/tmux/mouse.conf
-source $HOME/.config/tmux/version-specific/3.2/status-style-is-black-on-white.conf
-```
-
-If you want platform-specific settings for macOS, then add any of them, such as:
-
-```tmux
-source $HOME/.config/tmux/platform-specific/darwin/tmux.conf
-```
-
-For a ready-made starting point, copy `tmux.conf` (for tmux 3.2 and newer) to `${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf`.
-
-If you use macOS, then see these too, and set your terminal to send Option as Meta (see `platform-specific/darwin/option-is-meta.md`):
+A file named `*-for-version-X.Y.conf` adds settings to the file of the same name without the suffix, so source both, such as:
 
 ```tmux
 source $HOME/.config/tmux/copy-mode-via-vi-keys.conf
-source $HOME/.config/tmux/platform-specific/darwin/copy-mode-via-pbcopy.conf
-source $HOME/.config/tmux/platform-specific/darwin/paste-via-pbpaste.conf
+source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.7.conf
+source $HOME/.config/tmux/copy-mode-via-vi-keys-for-version-3.8.conf
 ```
 
-If you want any more settings, then add their respective lines:
-
-```tmux
-source $HOME/.config/tmux/base-index-pane-number-is-1.conf
-source $HOME/.config/tmux/mouse.conf
-source $HOME/.config/tmux/prefix-is-control-a.conf
-source $HOME/.config/tmux/select-window-via-meta-number.conf
-source $HOME/.config/tmux/select-layout-via-brackets.conf
-source $HOME/.config/tmux/select-pane-via-hjkl.conf
-source $HOME/.config/tmux/shell.conf
-source $HOME/.config/tmux/split-window.conf
-source $HOME/.config/tmux/status-via-powerline.conf
-source $HOME/.config/tmux/switch-session-via-name.conf
-source $HOME/.config/tmux/zoom-via-plus-minus.conf
-source $HOME/.config/tmux/resize-pane-via-hjkl.conf
-source $HOME/.config/tmux/last-window-via-tab.conf
-source $HOME/.config/tmux/aggressive-resize.conf
-source $HOME/.config/tmux/allow-passthrough.conf
-source $HOME/.config/tmux/extended-keys.conf
-source $HOME/.config/tmux/popup.conf
-```
+In tmux 3.8, mouse mode is on by default, prefix Tab opens a fast window switcher, prefix S-Tab opens a fast session switcher, and floating panes are available in an early release, via the `new-pane` command, which is bound to `prefix *` by default.
 
 
 ## Version-specific settings
 
-See the directory `version-specific`. Each file applies to its own version and newer, until a later version has a file of the same purpose:
+We use version directories to help us run tmux on many systems, including systems where we can't easily upgrade tmux ourselves.
 
-| Purpose | Files |
+A version directory has no version checks inside its files, because the directory itself picks the version.
+
+When a file is the same for many versions, then each version directory has its own copy.
+
+When a setting needs different syntax on older tmux, the version directory has a file with the same name and the older syntax:
+
+| File | Variants |
 |---|---|
-| Mouse | `1.9/mouse.conf` (1.9, 2.0), `2.1/mouse.conf` (2.1), `2.2/mouse.conf` (2.2 and newer) |
-| UTF-8 | `1.9/utf8.conf` (1.9 through 2.1) |
-| Status colors | `3.0/status-color-is-black-on-white.conf` (3.0, 3.1), `3.2/status-style-is-black-on-white.conf` (3.2 and newer) |
-
-We use version-specific files to help us run tmux on many systems,
-including systems where we can't easily upgrade tmux ourselves.
+| `mouse.conf` | 1.9 and 2.0: `mode-mouse` and related options; 2.1: `mouse` and `mouse-utf8`; 2.2 and newer: `mouse` |
+| `utf8.conf` | 1.9 through 2.1 only; tmux 2.2 removed the `utf8` options |
+| `version.conf` | 1.9 through 3.1: parse `tmux -V`; 3.2 and newer: use `#{version}` |
+| `copy-mode-via-vi-keys.conf` | 1.9 through 2.3: the `vi-copy` key table; 2.4 and newer: the `copy-mode-vi` key table |
+| `platform-specific/darwin/copy-mode-via-pbcopy.conf` | 1.9 through 2.3: `copy-pipe`; 2.4 and newer: `copy-pipe-and-cancel` |
+| `zoom-via-plus-minus.conf` | 1.9: both keys toggle the zoom; 2.0 and newer: `if-shell -F` picks zoom or unzoom |
+| `status-style-is-black-on-white.conf` | 1.9 through 3.7: `black` and `white`; 3.8 and newer: theme colors |
 
 For example, when we use version 2.2 or newer then we want to set the mouse like this:
 
@@ -117,11 +152,20 @@ For example, when we use version 2.2 or newer then we want to set the mouse like
 set -g mouse on
 ```
 
+
 ## Platform-specific settings
 
-See the directory. `platform-specific`.
+See the directory `platform-specific` inside each version directory.
 
 We use platform-specific files to help us run tmux on many systems.
+
+If you use macOS, then add these, and set your terminal to send Option as Meta (see `platform-specific/darwin/option-is-meta.md`):
+
+```tmux
+source $HOME/.config/tmux/platform-specific/darwin/tmux.conf                  # prefix y copies the tmux buffer to the clipboard
+source $HOME/.config/tmux/platform-specific/darwin/copy-mode-via-pbcopy.conf  # copy mode y copies to the clipboard
+source $HOME/.config/tmux/platform-specific/darwin/paste-via-pbpaste.conf     # prefix p pastes the clipboard
+```
 
 For example, when we use the macOS platform a.k.a. Darwin,
 then we want this setting:
@@ -131,15 +175,27 @@ then we want this setting:
 bind y run-shell "tmux save-buffer - | pbcopy"
 ```
 
-## Suppress warnings
+## Testing
 
-If you want, you can use `set -q` to suppress warnings from nonexistent options. This which has been supported since tmux 1.7.
+We test our files two ways.
 
-For example the option `mouse-utf8` exists in tmux 2.0 but does not exist in tmux 3.0, so you can set the optiona and suppress warnings like this:
+`bin/lint` checks every version directory against the tmux source code of that release. It reads the source code as text, from GitHub, and caches it in `.cache/tmux-src`. It checks commands, flags, argument counts, option names, option scope, option values, copy mode commands, key names, format variables, colour names, terminal feature names, brace blocks, and `source-file` targets.
 
-```tmux
-set -q mouse-utf8 on
+```sh
+bin/lint            # lint every version directory
+bin/lint 3.8 2.6    # lint the given version directories
 ```
+
+`bin/check` loads a version directory's example `tmux.conf` in a separate tmux server, and reports any errors. This test is meaningful only for the directory that matches your installed tmux.
+
+```sh
+bin/check           # check the directory for your installed tmux
+```
+
+Our GitHub Actions workflow, `.github/workflows/test.yml`, runs `bin/lint`, and builds each tmux release from 1.9 through 3.8 from source, then runs `bin/check` for each release with its own tmux. So every version directory gets loaded by the tmux it is for.
+
+`bin/lint` finds mistakes that tmux would report when it reads a file, such as a misspelled option or a value that a version doesn't support. It doesn't run the commands, so it can't find mistakes in what the settings do, such as a key binding that doesn't do what you want.
+
 
 ## Primer
 
@@ -168,7 +224,7 @@ What is a session, a window, a pane?
 ## Use SSH to help with window naming
 
 If you want to use SSH and have each new SSH window cause its own window naming,
-then add this to your tmux config file, typically `~/.tmux.conf`:
+then add this to your tmux config file:
 
 ```tmux
 set-option -g allow-rename on
@@ -179,15 +235,17 @@ And add code like this to your SSH config file, typically `~/.ssh/config`:
 ```ssh
 Host *
 PermitLocalCommand yes
-LocalCommand if [[ $TERM == screen* ]]; then printf "\033k%h\033\\"; fi
+LocalCommand if [[ $TERM == screen* || $TERM == tmux* ]]; then printf "\033k%h\033\\"; fi
 ```
 
-When we sign in to a server, The code runs a command to print the server's
-local hostname with an escape sequence that triggers tmux to set the window title.
+When we sign in to a server, the code runs a command to print the server's
+local hostname with an escape sequence that triggers tmux to set the window name.
 If we open the list of windows (ctrl-a w) we see each window's server name.
 This is also the reason why I have automatic window renaming turned off.
 
-Note: The allow-rename option was added in tmux 1.6 and with default on. The allow-rename default changed after tmux 2.7 from on to off. If allow-rename is off, then the SSH code to rename each window will not have any effect
+Note: The allow-rename option was added in tmux 1.6 and with default on. The allow-rename default changed after tmux 2.7 from on to off. If allow-rename is off, then the SSH code to rename each window will not have any effect.
+
+The `$TERM` check matches both `screen*` and `tmux*`, because our `shell.conf` sets the terminal type to `tmux-256color`.
 
 Credits:
 
@@ -241,8 +299,8 @@ n/a [-]     Delete the most recently copied buffer of text.
 ; [:]       Enter the tmux command prompt.
 n/a [;]     Move to the previously active pane.
 =           Choose which buffer to paste interactively from a list.
-+           Change a pane to a window. [custom]
--           Change a window to a pane. [custom]
++           Zoom the current pane to fill the window. [custom]
+-           Unzoom the current pane. [custom]
 ?           List all key bindings.
 D           Choose a client to detach.
 [           Enter copy mode to copy text or view the history.

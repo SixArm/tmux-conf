@@ -1,0 +1,57 @@
+#!/bin/sh
+##
+# Check that a version directory's example tmux.conf loads without errors.
+#
+# This copies `sources/version-specific/<version>` into a temporary
+# `~/.config/tmux`, starts a separate tmux server on its own socket, with
+# no config, then sources the example `tmux.conf`, which sources the other
+# files, and reports any errors. It doesn't touch any tmux server you are
+# using, or your own config files.
+#
+# Usage:
+#
+#     bin/check            check the directory for the installed tmux
+#     bin/check 3.8        check the directory for tmux 3.8
+#
+# The check is meaningful only for the directory that matches the
+# installed tmux, because older directories use syntax that newer tmux
+# no longer accepts.
+#
+# Exit status is 0 if the config loads cleanly, and 1 otherwise.
+##
+
+set -eu
+
+dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+installed=$(tmux -V | sed -E 's/^[^0-9]*([0-9]+\.[0-9]+).*/\1/')
+version=${1:-$installed}
+src="$dir/sources/version-specific/$version"
+
+if [ ! -d "$src" ]; then
+  echo "error: no directory for tmux $version: $src"
+  exit 1
+fi
+if [ "$version" != "$installed" ]; then
+  echo "warning: checking tmux $version files with tmux $installed"
+fi
+
+tmp=$(mktemp -d)
+socket="tmux-conf-check-$$"
+cleanup() {
+  HOME="$tmp" tmux -L "$socket" kill-server 2>/dev/null || true
+  rm -rf "$tmp"
+}
+trap cleanup EXIT
+
+mkdir -p "$tmp/.config/tmux"
+cp -R "$src/." "$tmp/.config/tmux/"
+
+echo "$(tmux -V), files for tmux $version"
+HOME="$tmp" tmux -L "$socket" -f /dev/null new-session -d
+if output=$(HOME="$tmp" tmux -L "$socket" source-file "$tmp/.config/tmux/tmux.conf" 2>&1) && [ -z "$output" ]; then
+  echo "ok: version-specific/$version/tmux.conf loads without errors"
+else
+  echo "$output"
+  echo "error: version-specific/$version/tmux.conf has errors"
+  exit 1
+fi
