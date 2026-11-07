@@ -48,10 +48,17 @@ cp -R "$src/." "$tmp/.config/tmux/"
 
 echo "$(tmux -V), files for tmux $version"
 HOME="$tmp" tmux -L "$socket" -f /dev/null new-session -d
-if output=$(HOME="$tmp" tmux -L "$socket" source-file "$tmp/.config/tmux/tmux.conf" 2>&1) && [ -z "$output" ]; then
+status=0
+output=$(HOME="$tmp" tmux -L "$socket" source-file "$tmp/.config/tmux/tmux.conf" 2>&1) || status=$?
+
+# tmux 1.9 prints "set option: name -> value" for each option that a client
+# command sets. These are information, not errors, so ignore them.
+errors=$(printf '%s\n' "$output" | grep -v -e '^set option: ' -e '^$' || true)
+
+if [ "$status" -eq 0 ] && [ -z "$errors" ]; then
   echo "ok: version-specific/$version/tmux.conf loads without errors"
 else
-  echo "$output"
+  echo "$errors"
   echo "error: version-specific/$version/tmux.conf has errors"
   exit 1
 fi
