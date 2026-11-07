@@ -2,7 +2,7 @@
 """
 Lint our tmux config files against the tmux source code of each release.
 
-For each version directory in `sources/version-specific`, this reads the
+For each version directory in `sources`, such as `sources/3.8`, this reads the
 tmux source code at that release tag, as text, and checks every config
 file in the directory for:
 
@@ -28,7 +28,7 @@ Exit status is 0 if every file passes, and 1 otherwise.
 import json, os, re, sys, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VDIR = os.path.join(ROOT, 'sources', 'version-specific')
+VDIR = os.path.join(ROOT, 'sources')
 SRC = os.path.join(ROOT, '.cache', 'tmux-src')
 ONLY = sys.argv[1:]
 WANT = {'options-table.c', 'format.c', 'cfg.c', 'key-string.c', 'window-copy.c',
@@ -357,7 +357,7 @@ def lint_cmd(self, cmd, where, reldir):
 Linter.lint_cmd = lint_cmd
 
 # ---------------------------------------------------------------- main
-versions = sorted(os.listdir(VDIR), key=vt)
+versions = sorted((d for d in os.listdir(VDIR) if re.fullmatch(r'\d+\.\d+', d)), key=vt)
 total = 0
 for v in versions:
     if ONLY and v not in ONLY: continue

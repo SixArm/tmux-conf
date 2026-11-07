@@ -2,7 +2,7 @@
 ##
 # Check that a version directory's example tmux.conf loads without errors.
 #
-# This copies `sources/version-specific/<version>` into a temporary
+# This copies `sources/<version>` into a temporary
 # `~/.config/tmux`, starts a separate tmux server on its own socket, with
 # no config, then sources the example `tmux.conf`, which sources the other
 # files, and reports any errors. It doesn't touch any tmux server you are
@@ -30,7 +30,7 @@ set -eu
 dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 installed=$(tmux -V | sed -E 's/^[^0-9]*([0-9]+\.[0-9]+).*/\1/')
 version=${1:-$installed}
-src="$dir/sources/version-specific/$version"
+src="$dir/sources/$version"
 
 if [ ! -d "$src" ]; then
   echo "error: no directory for tmux $version: $src"
@@ -63,10 +63,10 @@ check_file() {
   # client command sets. These are information, not errors, so ignore them.
   errors=$(printf '%s\n' "$output" | grep -v -e '^set option: ' -e '^$' || true)
   if [ "$status" -eq 0 ] && [ -z "$errors" ]; then
-    echo "ok: version-specific/$version/$rel loads without errors"
+    echo "ok: sources/$version/$rel loads without errors"
   else
     [ -n "$errors" ] && echo "$errors"
-    echo "error: version-specific/$version/$rel has errors"
+    echo "error: sources/$version/$rel has errors"
     return 1
   fi
 }

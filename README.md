@@ -14,10 +14,10 @@ These are our tmux configuration files with annotations. We welcome feedback and
 Our files are in version directories, one for each tmux release from 1.9 through 3.8:
 
 ```txt
-sources/version-specific/1.9
-sources/version-specific/2.0
+sources/1.9
+sources/2.0
 ...
-sources/version-specific/3.8
+sources/3.8
 ```
 
 Each version directory is complete: it has every file that works on that tmux version, plus an example `tmux.conf` that sources them. Pick the directory that matches your tmux version, which `tmux -V` prints.
@@ -28,7 +28,7 @@ Install:
 git clone https://github.com/SixArm/tmux-conf.git
 version=$(tmux -V | sed -E 's/^[^0-9]*([0-9]+\.[0-9]+).*/\1/')
 mkdir -p $HOME/.config/tmux
-cp -R tmux-conf/sources/version-specific/$version/. $HOME/.config/tmux
+cp -R tmux-conf/sources/$version/. $HOME/.config/tmux
 ```
 
 This copies the example `tmux.conf` too:
