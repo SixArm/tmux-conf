@@ -30,7 +30,14 @@ cp -R tmux-conf/sources/. $HOME/.config/tmux
 
 ## How to source these files
 
-You can edit your own `.tmux.conf` file, which is typically at `~/.tmux.conf`, and add lines to it.
+You can edit your own tmux configuration file, and add lines to it.
+
+For the tmux configuration file location, we recommend changing from `~/.tmux.conf` to a more standard `${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf`. This follows the XDG Base Directory specification, keeps the file next to the files sourced here, and is supported by tmux 3.1 and newer.
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/tmux"
+mv ~/.tmux.conf "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
+```
 
 If you want a perfectly clean setup, then use this line first:
 
@@ -58,7 +65,7 @@ If you want platform-specific settings for macOS, then add any of them, such as:
 source $HOME/.config/tmux/platform-specific/darwin/tmux.conf
 ```
 
-For a ready-made starting point, copy `tmux.conf` (for tmux 3.2 and newer) to `~/.tmux.conf`.
+For a ready-made starting point, copy `tmux.conf` (for tmux 3.2 and newer) to `${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf`.
 
 If you use macOS, then see these too, and set your terminal to send Option as Meta (see `platform-specific/darwin/option-is-meta.md`):
 
