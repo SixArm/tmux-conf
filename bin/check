@@ -8,6 +8,11 @@
 # files, and reports any errors. It doesn't touch any tmux server you are
 # using, or your own config files.
 #
+# The example `tmux.conf` sources platform-specific files only for the
+# running platform, and via `if-shell`, which older tmux runs without
+# waiting, so errors in those files might not be reported. So then this
+# also sources every platform-specific file directly, on any platform.
+#
 # Usage:
 #
 #     bin/check            check the directory for the installed tmux
@@ -48,17 +53,28 @@ cp -R "$src/." "$tmp/.config/tmux/"
 
 echo "$(tmux -V), files for tmux $version"
 HOME="$tmp" tmux -L "$socket" -f /dev/null new-session -d
-status=0
-output=$(HOME="$tmp" tmux -L "$socket" source-file "$tmp/.config/tmux/tmux.conf" 2>&1) || status=$?
 
-# tmux 1.9 prints "set option: name -> value" for each option that a client
-# command sets. These are information, not errors, so ignore them.
-errors=$(printf '%s\n' "$output" | grep -v -e '^set option: ' -e '^$' || true)
+# Source one file, and print any errors. Return 1 if there are errors.
+check_file() {
+  rel=$1
+  status=0
+  output=$(HOME="$tmp" tmux -L "$socket" source-file "$tmp/.config/tmux/$rel" 2>&1) || status=$?
+  # tmux 1.9 prints "set option: name -> value" for each option that a
+  # client command sets. These are information, not errors, so ignore them.
+  errors=$(printf '%s\n' "$output" | grep -v -e '^set option: ' -e '^$' || true)
+  if [ "$status" -eq 0 ] && [ -z "$errors" ]; then
+    echo "ok: version-specific/$version/$rel loads without errors"
+  else
+    [ -n "$errors" ] && echo "$errors"
+    echo "error: version-specific/$version/$rel has errors"
+    return 1
+  fi
+}
 
-if [ "$status" -eq 0 ] && [ -z "$errors" ]; then
-  echo "ok: version-specific/$version/tmux.conf loads without errors"
-else
-  echo "$errors"
-  echo "error: version-specific/$version/tmux.conf has errors"
-  exit 1
-fi
+failed=0
+check_file tmux.conf || failed=1
+for path in "$tmp/.config/tmux"/platform-specific/*/*.conf; do
+  [ -e "$path" ] || continue
+  check_file "${path#"$tmp/.config/tmux/"}" || failed=1
+done
+exit "$failed"

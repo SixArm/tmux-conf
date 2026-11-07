@@ -5,7 +5,10 @@
 #
 # check: for each tmux release, build that release from source, then load
 #        the version directory's example `tmux.conf` in that tmux, via
-#        `bin/check`.
+#        `bin/check`, which also loads every platform-specific file.
+#
+# check-macos: load the example `tmux.conf` on macOS with the Homebrew tmux,
+#        so its macOS branch runs.
 
 name: test
 
@@ -32,6 +35,20 @@ jobs:
           restore-keys: tmux-src-
 
       - run: bin/lint
+
+  # Check on macOS with the Homebrew tmux, so the example `tmux.conf` runs
+  # its macOS branch, which sources the files in `platform-specific/darwin`.
+  check-macos:
+    name: check tmux on macOS
+    runs-on: macos-latest
+    env:
+      TERM: xterm-256color
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install tmux
+      - run: |
+          tmux -V
+          bin/check
 
   check:
     name: check tmux ${{ matrix.tmux }}

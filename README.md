@@ -192,7 +192,7 @@ bin/lint 3.8 2.6    # lint the given version directories
 bin/check           # check the directory for your installed tmux
 ```
 
-Our GitHub Actions workflow, `.github/workflows/test.yml`, runs `bin/lint`, and builds each tmux release from 1.9 through 3.8 from source, then runs `bin/check` for each release with its own tmux. So every version directory gets loaded by the tmux it is for.
+Our GitHub Actions workflow, `.github/workflows/test.yml`, runs `bin/lint`, and builds each tmux release from 1.9 through 3.8 from source, then runs `bin/check` for each release with its own tmux. So every version directory gets loaded by the tmux it is for. `bin/check` also loads every platform-specific file directly, so the macOS files get checked on Linux too. The workflow also runs `bin/check` on macOS with the Homebrew tmux.
 
 `bin/lint` finds mistakes that tmux would report when it reads a file, such as a misspelled option or a value that a version doesn't support. It doesn't run the commands, so it can't find mistakes in what the settings do, such as a key binding that doesn't do what you want.
 
