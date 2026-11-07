@@ -86,6 +86,7 @@ source $HOME/.config/tmux/resize-pane-via-hjkl.conf
 source $HOME/.config/tmux/last-window-via-tab.conf
 source $HOME/.config/tmux/aggressive-resize.conf
 source $HOME/.config/tmux/allow-passthrough.conf
+source $HOME/.config/tmux/extended-keys.conf
 source $HOME/.config/tmux/popup.conf
 ```
 
